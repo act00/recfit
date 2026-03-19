@@ -14,7 +14,8 @@
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     
     :root {
-      --primary: #39FF14;
+      --primary: #32E010;
+      --primary-glow: rgba(50, 224, 16, 0.4);
       --primary-dark: #00CC52;
       --bg-dark: #0a0a0f;
       --bg-darker: #050508;
@@ -26,7 +27,7 @@
       --back: #60A5FA;
       --arm: #FBBF24;
       --leg: #A855F7;
-      --positive: #39FF14;
+      --positive: #32E010;
       --negative: #FF6B6B;
       --danger: #e74c3c;
     }
@@ -45,7 +46,7 @@
       background: linear-gradient(135deg, #0d0d12, #0a0a0f);
       padding: 14px 12px;
       text-align: center;
-      border-bottom: 1px solid rgba(57,255,20,0.2);
+      border-bottom: 1px solid rgba(50,224,16,0.2);
       position: sticky;
       top: 0;
       z-index: 100;
@@ -57,7 +58,7 @@
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
-      text-shadow: 0 0 20px rgba(57,255,20,0.3);
+      text-shadow: 0 0 20px rgba(50,224,16,0.3);
     }
     .header-date {
       display: flex;
@@ -201,13 +202,14 @@
       background: linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
       border-radius: 10px;
       padding: 12px;
-      border: 1px solid rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      box-shadow: 0 0 0 1px rgba(50, 224, 16, 0.08), inset 0 1px 0 rgba(255,255,255,0.05);
       cursor: pointer;
       transition: all 0.2s ease;
       position: relative;
     }
-    .exercise-card:active { transform: scale(0.98); background: rgba(255,255,255,0.1); }
-    .exercise-card.custom::before { content: '★'; position: absolute; top: 6px; right: 6px; font-size: 10px; color: var(--primary); }
+    .exercise-card:active { transform: scale(0.98); background: rgba(255,255,255,0.1); box-shadow: 0 0 8px rgba(50, 224, 16, 0.2); }
+    .exercise-card.custom::before { content: '★'; position: absolute; top: 6px; right: 6px; font-size: 10px; color: var(--primary); text-shadow: 0 0 4px var(--primary-glow); }
     .exercise-card h3 { font-size: 12px; font-weight: 600; margin-bottom: 4px; padding-right: 14px; }
     .last-record { font-size: 10px; color: var(--primary); line-height: 1.3; }
     .last-date { color: #666; }
@@ -219,7 +221,7 @@
       border-radius: 14px;
       padding: 14px;
       margin-bottom: 12px;
-      border: 1px solid rgba(57,255,20,0.15);
+      border: 1px solid rgba(50,224,16,0.15);
     }
     .nutrition-card h2 { font-size: 14px; font-weight: 600; margin-bottom: 10px; }
     .nutrition-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
@@ -309,13 +311,15 @@
       background: rgba(255,255,255,0.05);
       border-radius: 8px;
       padding: 10px;
-      border: 1px solid rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      box-shadow: 0 0 0 1px rgba(50, 224, 16, 0.08), inset 0 1px 0 rgba(255,255,255,0.05);
       cursor: pointer;
       transition: all 0.2s ease;
       position: relative;
     }
-    .food-card.selected { background: rgba(78,205,196,0.15); border-color: var(--primary); }
-    .food-card.custom::before { content: '★'; position: absolute; top: 4px; right: 4px; font-size: 9px; color: var(--primary); }
+    .food-card:active { transform: scale(0.98); box-shadow: 0 0 8px rgba(50, 224, 16, 0.2); }
+    .food-card.selected { background: rgba(78,205,196,0.15); border-color: var(--primary); box-shadow: 0 0 10px var(--primary-glow); }
+    .food-card.custom::before { content: '★'; position: absolute; top: 4px; right: 4px; font-size: 9px; color: var(--primary); text-shadow: 0 0 4px var(--primary-glow); }
     .food-card.quick-entry { background: linear-gradient(135deg, rgba(150,206,180,0.15), rgba(78,205,196,0.1)); border: 1px dashed var(--primary); }
     .food-card h4 { font-size: 11px; font-weight: 600; margin-bottom: 2px; padding-right: 12px; }
     .food-info { font-size: 9px; color: var(--text-muted); margin-bottom: 2px; }
@@ -372,7 +376,7 @@
       border-radius: 14px;
       padding: 14px;
       margin-bottom: 12px;
-      border: 1px solid rgba(57,255,20,0.2);
+      border: 1px solid rgba(50,224,16,0.2);
     }
     .result-item {
       display: flex;
@@ -407,7 +411,7 @@
       right: 0;
       display: flex;
       background: linear-gradient(180deg, #0d0d12, #050508);
-      border-top: 1px solid rgba(57,255,20,0.15);
+      border-top: 1px solid rgba(50, 224, 16, 0.2);
       padding: 5px 0;
       padding-bottom: max(5px, env(safe-area-inset-bottom));
       z-index: 100;
@@ -416,13 +420,15 @@
       flex: 1;
       background: none;
       border: none;
+      border-right: 1px solid rgba(50, 224, 16, 0.2);
       color: #666;
       font-size: 9px;
       padding: 5px;
       cursor: pointer;
       transition: all 0.2s ease;
     }
-    .nav-btn.active { color: var(--primary); }
+    .nav-btn:last-child { border-right: none; }
+    .nav-btn.active { color: var(--primary); text-shadow: 0 0 8px var(--primary-glow); }
     .nav-btn img { display: block; width: 28px; height: 28px; margin: 0 auto 2px; border-radius: 6px; opacity: 0.6; }
     .nav-btn.active img { opacity: 1; }
     
@@ -704,7 +710,7 @@
       padding: 14px;
       text-align: center;
       margin-bottom: 10px;
-      border: 1px solid rgba(57,255,20,0.15);
+      border: 1px solid rgba(50,224,16,0.15);
     }
     .rm-result-label {
       font-size: 11px;
@@ -1710,7 +1716,7 @@
     
     function renderExercises() {
       const part = DEFAULT_BODY_PARTS.find(p => p.id === currentBodyPart);
-      document.getElementById('exercisePartName').textContent = `${part.icon} ${part.name}の種目`;
+      document.getElementById('exercisePartName').textContent = `${part.name}の種目`;
       const container = document.getElementById('exercise-grid');
       const dateStr = getLocalDateStr(currentDate);
       const partExercises = exercises[currentBodyPart] || [];
