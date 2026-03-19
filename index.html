@@ -1,0 +1,2435 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#0a0a0f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="RecFit">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <title>RecFit - フィットネス管理</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    
+    :root {
+      --primary: #39FF14;
+      --primary-dark: #00CC52;
+      --bg-dark: #0a0a0f;
+      --bg-darker: #050508;
+      --bg-card: rgba(255,255,255,0.05);
+      --text: #eee;
+      --text-muted: #888;
+      --chest: #FF6B6B;
+      --shoulder: #4ADE80;
+      --back: #60A5FA;
+      --arm: #FBBF24;
+      --leg: #A855F7;
+      --positive: #39FF14;
+      --negative: #FF6B6B;
+      --danger: #e74c3c;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Kaku Gothic Pro', 'Meiryo', sans-serif;
+      background: linear-gradient(135deg, var(--bg-dark), var(--bg-darker));
+      color: var(--text);
+      min-height: 100vh;
+      min-height: 100dvh;
+      padding-bottom: 80px;
+      overflow-x: hidden;
+    }
+    
+    .header {
+      background: linear-gradient(135deg, #0d0d12, #0a0a0f);
+      padding: 14px 12px;
+      text-align: center;
+      border-bottom: 1px solid rgba(57,255,20,0.2);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header h1 {
+      font-size: 20px;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-shadow: 0 0 20px rgba(57,255,20,0.3);
+    }
+    .header-date {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 8px;
+    }
+    .date-nav-btn {
+      background: rgba(255,255,255,0.1);
+      border: none;
+      color: var(--text);
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .date-display {
+      font-size: 13px;
+      color: var(--text);
+      cursor: pointer;
+      padding: 6px 12px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 20px;
+    }
+    .date-display.today { background: var(--primary); color: var(--bg-dark); font-weight: 600; }
+    
+    .main {
+      padding: 12px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    .section { display: none; animation: fadeIn 0.3s ease; }
+    .section.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    
+    .week-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-card);
+      border-radius: 12px;
+      padding: 10px 12px;
+      margin-bottom: 12px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .week-nav-btn {
+      background: rgba(255,255,255,0.1);
+      border: none;
+      color: var(--text);
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .week-nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+    .week-label { font-size: 13px; font-weight: 600; text-align: center; }
+    .week-label small { display: block; font-size: 11px; color: var(--text-muted); font-weight: 400; margin-top: 2px; }
+    
+    .week-calendar {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+      margin-bottom: 12px;
+    }
+    .week-day {
+      text-align: center;
+      padding: 6px 2px 4px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: 2px solid transparent;
+      min-height: 58px;
+    }
+    .week-day.selected { border-color: var(--primary); background: rgba(78,205,196,0.15); }
+    .week-day.today { background: var(--primary); }
+    .week-day.today .day-name, .week-day.today .day-num { color: var(--bg-dark); }
+    .day-name { font-size: 9px; color: var(--text-muted); }
+    .day-num { font-size: 13px; font-weight: 600; margin-top: 1px; }
+    .day-parts { display: flex; flex-wrap: wrap; justify-content: center; gap: 2px; margin-top: 3px; min-height: 12px; }
+    .day-part-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .week-day.today .day-part-dot { border: 1px solid var(--bg-dark); }
+    
+    .progress-card {
+      background: var(--bg-card);
+      border-radius: 14px;
+      padding: 12px;
+      margin-bottom: 12px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .progress-header h2 { font-size: 14px; font-weight: 600; }
+    .edit-btn { background: none; border: none; font-size: 16px; cursor: pointer; }
+    .progress-item { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .progress-label { font-size: 11px; width: 45px; flex-shrink: 0; }
+    .progress-bar { flex: 1; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; min-width: 0; }
+    .progress-fill { height: 100%; border-radius: 3px; transition: width 0.3s ease; }
+    .progress-text { font-size: 10px; width: 65px; text-align: right; flex-shrink: 0; }
+    .remaining { color: var(--primary); font-weight: 600; }
+    
+    .body-tabs-container { display: flex; align-items: center; gap: 6px; margin-bottom: 12px; }
+    .body-tabs { display: flex; gap: 5px; overflow-x: auto; flex: 1; padding-bottom: 4px; -webkit-overflow-scrolling: touch; }
+    .body-tabs::-webkit-scrollbar { display: none; }
+    .body-tab {
+      flex: 0 0 auto;
+      width: 56px;
+      height: 56px;
+      padding: 4px;
+      background: rgba(255,255,255,0.08);
+      border: 2px solid transparent;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .body-tab img { width: 44px; height: 44px; object-fit: contain; border-radius: 8px; opacity: 0.7; }
+    .body-tab.active { border-color: currentColor; background: rgba(255,255,255,0.15); }
+    .body-tab.active img { opacity: 1; }
+    
+    .exercise-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .exercise-header h3 { font-size: 13px; color: var(--text-muted); }
+    .add-exercise-btn {
+      padding: 6px 12px;
+      background: rgba(255,255,255,0.1);
+      border: 1px dashed rgba(255,255,255,0.3);
+      border-radius: 8px;
+      color: var(--text-muted);
+      font-size: 11px;
+      cursor: pointer;
+    }
+    .exercise-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    .exercise-card {
+      background: linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+      border-radius: 10px;
+      padding: 12px;
+      border: 1px solid rgba(255,255,255,0.08);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+    .exercise-card:active { transform: scale(0.98); background: rgba(255,255,255,0.1); }
+    .exercise-card.custom::before { content: '★'; position: absolute; top: 6px; right: 6px; font-size: 10px; color: var(--primary); }
+    .exercise-card h3 { font-size: 12px; font-weight: 600; margin-bottom: 4px; padding-right: 14px; }
+    .last-record { font-size: 10px; color: var(--primary); line-height: 1.3; }
+    .last-date { color: #666; }
+    .no-record { font-size: 10px; color: #666; }
+    .today-record { color: #96CEB4 !important; }
+    
+    .nutrition-card {
+      background: linear-gradient(135deg, #0d1510, #0a0f0d);
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 12px;
+      border: 1px solid rgba(57,255,20,0.15);
+    }
+    .nutrition-card h2 { font-size: 14px; font-weight: 600; margin-bottom: 10px; }
+    .nutrition-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+    .nutrition-item { text-align: center; }
+    .nutrition-value { display: block; font-size: 16px; font-weight: 700; }
+    .nutrition-label { font-size: 9px; color: var(--text-muted); }
+    .diff-section { margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1); }
+    .diff-title { font-size: 11px; color: var(--text-muted); margin-bottom: 8px; text-align: center; }
+    .diff-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+    .diff-item { text-align: center; }
+    .diff-value { display: block; font-size: 13px; font-weight: 700; }
+    .diff-value.positive { color: var(--positive); }
+    .diff-value.negative { color: var(--negative); }
+    .diff-label { font-size: 8px; color: var(--text-muted); }
+    
+    /* 記録一覧 */
+    .records-section {
+      background: var(--bg-card);
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 12px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .records-section h3 {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .record-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 10px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 8px;
+      margin-bottom: 6px;
+    }
+    .record-item:last-child { margin-bottom: 0; }
+    .record-info { flex: 1; }
+    .record-info .record-name { font-size: 12px; font-weight: 600; }
+    .record-info .record-detail { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+    .record-delete-btn {
+      width: 28px;
+      height: 28px;
+      background: rgba(231,76,60,0.2);
+      border: none;
+      border-radius: 50%;
+      color: var(--danger);
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .no-records { font-size: 11px; color: #666; text-align: center; padding: 10px; }
+    
+    .meal-tabs { display: flex; gap: 5px; margin-bottom: 10px; }
+    .meal-tab {
+      flex: 1;
+      padding: 7px 4px;
+      background: rgba(255,255,255,0.08);
+      border: none;
+      border-radius: 8px;
+      color: var(--text-muted);
+      font-size: 10px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .meal-tab.active { background: var(--primary); color: var(--bg-dark); }
+    
+    .food-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .food-header h3 { font-size: 12px; color: var(--text-muted); }
+    .add-food-btn {
+      padding: 5px 10px;
+      background: rgba(255,255,255,0.1);
+      border: 1px dashed rgba(255,255,255,0.3);
+      border-radius: 8px;
+      color: var(--text-muted);
+      font-size: 10px;
+      cursor: pointer;
+    }
+    .food-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-bottom: 10px; }
+    .food-card {
+      background: rgba(255,255,255,0.05);
+      border-radius: 8px;
+      padding: 10px;
+      border: 1px solid rgba(255,255,255,0.08);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+    .food-card.selected { background: rgba(78,205,196,0.15); border-color: var(--primary); }
+    .food-card.custom::before { content: '★'; position: absolute; top: 4px; right: 4px; font-size: 9px; color: var(--primary); }
+    .food-card.quick-entry { background: linear-gradient(135deg, rgba(150,206,180,0.15), rgba(78,205,196,0.1)); border: 1px dashed var(--primary); }
+    .food-card h4 { font-size: 11px; font-weight: 600; margin-bottom: 2px; padding-right: 12px; }
+    .food-info { font-size: 9px; color: var(--text-muted); margin-bottom: 2px; }
+    .food-macros { font-size: 8px; color: #666; margin-bottom: 2px; }
+    .food-calories { font-size: 12px; font-weight: 700; color: var(--primary); }
+    .quantity-control { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 6px; }
+    .qty-btn { width: 24px; height: 24px; background: var(--primary); border: none; border-radius: 50%; color: var(--bg-dark); font-size: 14px; font-weight: 700; cursor: pointer; }
+    .qty-value { font-size: 14px; font-weight: 700; }
+    .add-meal-btn {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      border: none;
+      border-radius: 10px;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    
+    .calc-card {
+      background: rgba(255,255,255,0.05);
+      border-radius: 14px;
+      padding: 12px;
+      margin-bottom: 12px;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .calc-card h2 { font-size: 14px; font-weight: 600; margin-bottom: 12px; }
+    .calc-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    .calc-grid.single-col { grid-template-columns: 1fr; }
+    .calc-item { display: flex; flex-direction: column; gap: 3px; }
+    .calc-item label { font-size: 10px; color: var(--text-muted); }
+    .calc-item input, .calc-item select {
+      padding: 9px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 14px;
+      width: 100%;
+      min-width: 0;
+    }
+    .calc-item select {
+      background: var(--bg-dark);
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23888' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      padding-right: 28px;
+    }
+    
+    .result-card {
+      background: linear-gradient(135deg, #0d1510, #0a0f0d);
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 12px;
+      border: 1px solid rgba(57,255,20,0.2);
+    }
+    .result-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+    .result-item:last-child { border-bottom: none; }
+    .result-label { font-size: 12px; color: #aaa; }
+    .result-value { font-size: 16px; font-weight: 700; color: var(--primary); }
+    
+    .pfc-card {
+      background: linear-gradient(135deg, rgba(255,107,107,0.15), rgba(78,205,196,0.15));
+      border-radius: 14px;
+      padding: 14px;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .pfc-card h3 { font-size: 14px; font-weight: 600; text-align: center; margin-bottom: 12px; }
+    .pfc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 10px; }
+    .pfc-item { text-align: center; }
+    .pfc-value { display: block; font-size: 16px; font-weight: 700; }
+    .pfc-label { font-size: 9px; color: var(--text-muted); }
+    .pfc-note { font-size: 10px; color: var(--text-muted); text-align: center; line-height: 1.4; }
+    
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      display: flex;
+      background: linear-gradient(180deg, #0d0d12, #050508);
+      border-top: 1px solid rgba(57,255,20,0.15);
+      padding: 5px 0;
+      padding-bottom: max(5px, env(safe-area-inset-bottom));
+      z-index: 100;
+    }
+    .nav-btn {
+      flex: 1;
+      background: none;
+      border: none;
+      color: #666;
+      font-size: 9px;
+      padding: 5px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .nav-btn.active { color: var(--primary); }
+    .nav-btn img { display: block; width: 28px; height: 28px; margin: 0 auto 2px; border-radius: 6px; opacity: 0.6; }
+    .nav-btn.active img { opacity: 1; }
+    
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.85);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 1000;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal {
+      background: linear-gradient(135deg, var(--bg-dark), var(--bg-darker));
+      border-radius: 18px;
+      padding: 18px;
+      width: 100%;
+      max-width: 340px;
+      max-height: 85vh;
+      overflow-y: auto;
+      border: 1px solid rgba(255,255,255,0.1);
+      animation: slideUp 0.3s ease;
+    }
+    @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    .modal h2 { font-size: 16px; font-weight: 700; text-align: center; margin-bottom: 6px; }
+    .modal-subtitle { font-size: 11px; color: var(--text-muted); text-align: center; margin-bottom: 14px; }
+    .modal-last-record { font-size: 12px; color: var(--primary); text-align: center; margin-bottom: 8px; }
+    .modal-target {
+      font-size: 11px;
+      color: #96CEB4;
+      text-align: center;
+      margin-bottom: 12px;
+      padding: 8px;
+      background: rgba(150,206,180,0.15);
+      border-radius: 8px;
+      line-height: 1.4;
+    }
+    .modal-target strong { display: block; font-size: 13px; margin-top: 4px; }
+    .modal-content { display: flex; gap: 10px; margin-bottom: 14px; }
+    .modal-field { flex: 1; display: flex; flex-direction: column; gap: 5px; }
+    .modal-field.full { flex: none; width: 100%; }
+    .modal-field label { font-size: 11px; color: var(--text-muted); }
+    .modal-field input, .modal-field select {
+      padding: 10px;
+      background: #0f0f23;
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 10px;
+      color: var(--text);
+      font-size: 14px;
+      width: 100%;
+    }
+    .modal-actions { display: flex; gap: 8px; }
+    .cancel-btn {
+      flex: 1;
+      padding: 11px;
+      background: rgba(255,255,255,0.08);
+      border: none;
+      border-radius: 10px;
+      color: var(--text-muted);
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .save-btn {
+      flex: 1;
+      padding: 11px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      border: none;
+      border-radius: 10px;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .delete-btn {
+      flex: 1;
+      padding: 11px;
+      background: var(--danger);
+      border: none;
+      border-radius: 10px;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    
+    /* モーダル内の記録一覧 */
+    .modal-records {
+      margin-bottom: 14px;
+      padding: 10px;
+      background: rgba(0,0,0,0.2);
+      border-radius: 10px;
+    }
+    .modal-records h4 {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+    .modal-record-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 8px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 6px;
+      margin-bottom: 4px;
+    }
+    .modal-record-item:last-child { margin-bottom: 0; }
+    .modal-record-text { font-size: 12px; }
+    .modal-record-delete {
+      width: 22px;
+      height: 22px;
+      background: rgba(231,76,60,0.3);
+      border: none;
+      border-radius: 50%;
+      color: var(--danger);
+      font-size: 12px;
+      cursor: pointer;
+    }
+    
+    .goal-grid { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+    .goal-item { display: flex; align-items: center; justify-content: space-between; }
+    .goal-item label { font-size: 12px; }
+    .goal-item input {
+      width: 65px;
+      padding: 8px;
+      background: #0f0f23;
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 14px;
+      text-align: center;
+    }
+    
+    .add-form { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+    .add-form input {
+      padding: 10px;
+      background: #0f0f23;
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 14px;
+    }
+    .add-form .row { display: flex; gap: 8px; }
+    .add-form .row input { flex: 1; min-width: 0; }
+    
+    .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .calendar-month { font-size: 15px; font-weight: 600; }
+    .calendar-nav {
+      background: rgba(255,255,255,0.1);
+      border: none;
+      color: var(--text);
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 16px; }
+    .calendar-weekday { text-align: center; font-size: 10px; color: var(--text-muted); padding: 4px; }
+    .calendar-day {
+      aspect-ratio: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255,255,255,0.05);
+      border: none;
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 12px;
+      cursor: pointer;
+      position: relative;
+      padding: 2px;
+    }
+    .calendar-day.other-month { color: #444; }
+    .calendar-day.today { border: 2px solid var(--primary); }
+    .calendar-day.selected { background: var(--primary); color: var(--bg-dark); }
+    .calendar-day-num { font-size: 11px; line-height: 1; }
+    .calendar-day-parts {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 1px;
+      margin-top: 2px;
+      max-width: 100%;
+    }
+    .calendar-part-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+    .calendar-day.selected .calendar-part-dot {
+      border: 1px solid var(--bg-dark);
+    }
+    
+    .quick-entry-form { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+    .quick-entry-form .row { display: flex; gap: 8px; }
+    .quick-entry-form .field { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+    .quick-entry-form label { font-size: 10px; color: var(--text-muted); }
+    .quick-entry-form input {
+      padding: 10px;
+      background: #0f0f23;
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 14px;
+      width: 100%;
+    }
+    .auto-calc-note { font-size: 10px; color: var(--primary); text-align: center; margin-top: -5px; }
+    
+    /* RM換算 */
+    .rm-card {
+      background: linear-gradient(135deg, rgba(255,107,107,0.1), rgba(78,205,196,0.1));
+      border-radius: 14px;
+      padding: 14px;
+      margin-top: 12px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .rm-card h3 {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .rm-type-tabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+    .rm-type-tab {
+      flex: 1;
+      padding: 8px 6px;
+      background: rgba(255,255,255,0.08);
+      border: none;
+      border-radius: 8px;
+      color: var(--text-muted);
+      font-size: 10px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .rm-type-tab.active {
+      background: var(--primary);
+      color: var(--bg-dark);
+    }
+    .rm-inputs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .rm-input-group {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .rm-input-group label {
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+    .rm-input-group input {
+      padding: 10px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 14px;
+      width: 100%;
+    }
+    .rm-result {
+      background: linear-gradient(135deg, #0d1510, #0a0f0d);
+      border-radius: 10px;
+      padding: 14px;
+      text-align: center;
+      margin-bottom: 10px;
+      border: 1px solid rgba(57,255,20,0.15);
+    }
+    .rm-result-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+    .rm-result-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--primary);
+    }
+    .rm-result-unit {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-left: 4px;
+    }
+    .rm-table-btn {
+      width: 100%;
+      padding: 10px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .rm-formula {
+      font-size: 9px;
+      color: var(--text-muted);
+      text-align: center;
+      margin-top: 8px;
+    }
+    
+    /* RM換算表モーダル */
+    .rm-table-container {
+      max-height: 50vh;
+      overflow: auto;
+      margin-bottom: 14px;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+    }
+    .rm-table {
+      width: max-content;
+      min-width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      font-size: 10px;
+    }
+    .rm-table th, .rm-table td {
+      padding: 6px 4px;
+      text-align: center;
+      border: 1px solid rgba(255,255,255,0.1);
+      min-width: 32px;
+    }
+    .rm-table th {
+      background: #1a1a1f;
+      color: var(--primary);
+      font-weight: 600;
+      position: sticky;
+      top: 0;
+      z-index: 2;
+    }
+    .rm-table th:first-child {
+      background: #1a1a1f;
+      color: #FF6B6B;
+      position: sticky;
+      left: 0;
+      z-index: 3;
+    }
+    .rm-table td:first-child {
+      background: #12121a;
+      font-weight: 600;
+      color: #FF6B6B;
+      position: sticky;
+      left: 0;
+      z-index: 1;
+    }
+    .rm-table tbody tr:nth-child(even) td {
+      background: #0f0f14;
+    }
+    .rm-table tbody tr:nth-child(even) td:first-child {
+      background: #0d0d12;
+    }
+    
+    .toast {
+      position: fixed;
+      bottom: 90px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--primary);
+      color: var(--bg-dark);
+      padding: 10px 18px;
+      border-radius: 30px;
+      font-size: 12px;
+      font-weight: 600;
+      opacity: 0;
+      transition: all 0.3s ease;
+      z-index: 2000;
+      white-space: nowrap;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+    
+    @media (max-width: 360px) {
+      .nutrition-value, .pfc-value { font-size: 14px; }
+      .result-value { font-size: 14px; }
+      .diff-value { font-size: 11px; }
+      .progress-text { font-size: 9px; width: 55px; }
+      .progress-label { font-size: 10px; width: 40px; }
+      .body-tab { width: 48px; height: 48px; }
+      .body-tab img { width: 36px; height: 36px; }
+      .exercise-card h3 { font-size: 11px; }
+      .food-card h4 { font-size: 10px; }
+      .day-part-dot { width: 7px; height: 7px; }
+      .calendar-part-dot { width: 5px; height: 5px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <h1>RecFit</h1>
+    <div class="header-date">
+      <button class="date-nav-btn" onclick="changeDate(-1)">◀</button>
+      <div class="date-display" id="dateDisplay" onclick="openCalendarModal()"></div>
+      <button class="date-nav-btn" onclick="changeDate(1)">▶</button>
+    </div>
+  </header>
+  
+  <main class="main">
+    <!-- トレーニングセクション -->
+    <section id="training-section" class="section active">
+      <div class="week-nav">
+        <button class="week-nav-btn" id="prevWeekBtn" onclick="changeWeek(-1)">◀</button>
+        <div class="week-label" id="weekLabel"></div>
+        <button class="week-nav-btn" id="nextWeekBtn" onclick="changeWeek(1)">▶</button>
+      </div>
+      
+      <div class="week-calendar" id="weekCalendar"></div>
+      
+      <div class="progress-card">
+        <div class="progress-header">
+          <h2>📊 週間セット数</h2>
+          <button class="edit-btn" onclick="openGoalModal()">⚙️</button>
+        </div>
+        <div id="progress-container"></div>
+      </div>
+      
+      <!-- 本日のトレーニング記録 -->
+      <div class="records-section" id="training-records-section">
+        <h3>📝 <span id="training-records-date">今日</span>の記録</h3>
+        <div id="training-records-list"></div>
+      </div>
+      
+      <div class="body-tabs-container">
+        <div class="body-tabs" id="body-tabs"></div>
+      </div>
+      
+      <div class="exercise-header">
+        <h3 id="exercisePartName">種目</h3>
+        <button class="add-exercise-btn" onclick="openAddExerciseModal()">＋ 種目追加</button>
+      </div>
+      
+      <div class="exercise-grid" id="exercise-grid"></div>
+    </section>
+    
+    <!-- 食事セクション -->
+    <section id="meal-section" class="section">
+      <div class="nutrition-card">
+        <h2>🍽️ <span id="meal-date-label">今日</span>の栄養</h2>
+        <div class="nutrition-grid" id="nutrition-grid"></div>
+        <div class="diff-section">
+          <div class="diff-title">🎯 目標との差分</div>
+          <div class="diff-grid" id="diff-grid"></div>
+        </div>
+      </div>
+      
+      <!-- 本日の食事記録 -->
+      <div class="records-section" id="meal-records-section">
+        <h3>📝 <span id="meal-records-date">今日</span>の記録</h3>
+        <div id="meal-records-list"></div>
+      </div>
+      
+      <div class="meal-tabs" id="meal-tabs"></div>
+      
+      <div class="food-header">
+        <h3>食材を選択</h3>
+        <button class="add-food-btn" onclick="openAddFoodModal()">＋ 食材追加</button>
+      </div>
+      
+      <div class="food-grid" id="food-grid"></div>
+      
+      <button class="add-meal-btn" id="add-meal-btn" onclick="addMealRecord()" style="display:none;">
+        🍽️ 食事を記録する
+      </button>
+    </section>
+    
+    <!-- 計算セクション -->
+    <section id="calc-section" class="section">
+      <div class="calc-card">
+        <h2>📝 基本情報</h2>
+        <div class="calc-grid">
+          <div class="calc-item">
+            <label>体重 (kg)</label>
+            <input type="number" id="calcWeight" value="70" onchange="updateCalc()">
+          </div>
+          <div class="calc-item">
+            <label>身長 (cm)</label>
+            <input type="number" id="calcHeight" value="170" onchange="updateCalc()">
+          </div>
+          <div class="calc-item">
+            <label>年齢</label>
+            <input type="number" id="calcAge" value="30" onchange="updateCalc()">
+          </div>
+          <div class="calc-item">
+            <label>性別</label>
+            <select id="calcGender" onchange="updateCalc()">
+              <option value="male">男性</option>
+              <option value="female">女性</option>
+            </select>
+          </div>
+        </div>
+        <div class="calc-grid single-col" style="margin-top: 8px;">
+          <div class="calc-item">
+            <label>活動レベル</label>
+            <select id="calcActivity" onchange="updateCalc()">
+              <option value="1.2">ほぼ運動しない</option>
+              <option value="1.375">軽い運動(週1-3)</option>
+              <option value="1.55" selected>適度な運動(週3-5)</option>
+              <option value="1.725">激しい運動(週6-7)</option>
+              <option value="1.9">非常に激しい運動</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      
+      <div class="result-card">
+        <div class="result-item">
+          <span class="result-label">基礎代謝量 (BMR)</span>
+          <span class="result-value" id="bmr-result">0 kcal</span>
+        </div>
+        <div class="result-item">
+          <span class="result-label">消費カロリー (TDEE)</span>
+          <span class="result-value" id="tdee-result">0 kcal</span>
+        </div>
+      </div>
+      
+      <div class="calc-card">
+        <h2>🎯 目標設定</h2>
+        <div class="calc-grid">
+          <div class="calc-item">
+            <label>目標体重 (kg)</label>
+            <input type="number" id="targetWeight" value="65" onchange="updateCalc()">
+          </div>
+          <div class="calc-item">
+            <label>目標期間 (週)</label>
+            <input type="number" id="targetWeeks" value="12" onchange="updateCalc()">
+          </div>
+        </div>
+      </div>
+      
+      <div class="pfc-card">
+        <h3>推奨摂取量</h3>
+        <div class="pfc-grid" id="pfc-grid"></div>
+        <p class="pfc-note" id="pfc-note"></p>
+      </div>
+      
+      <!-- RM換算計算機 -->
+      <div class="rm-card">
+        <h3>🏋️ RM換算計算機</h3>
+        <div class="rm-type-tabs">
+          <button class="rm-type-tab active" id="rm-tab-bench" onclick="switchRmType('bench')">ベンチプレス</button>
+          <button class="rm-type-tab" id="rm-tab-squat" onclick="switchRmType('squat')">スクワット/デッドリフト</button>
+        </div>
+        <div class="rm-inputs">
+          <div class="rm-input-group">
+            <label>重量 (kg)</label>
+            <input type="number" id="rm-weight" placeholder="80" oninput="calculateRM()">
+          </div>
+          <div class="rm-input-group">
+            <label>回数</label>
+            <input type="number" id="rm-reps" placeholder="10" oninput="calculateRM()">
+          </div>
+        </div>
+        <div class="rm-result">
+          <div class="rm-result-label">推定1RM（最大挙上重量）</div>
+          <span class="rm-result-value" id="rm-result-value">---</span>
+          <span class="rm-result-unit">kg</span>
+        </div>
+        <button class="rm-table-btn" onclick="openRmTableModal()">
+          📊 RM換算表を見る
+        </button>
+        <p class="rm-formula" id="rm-formula">計算式: 1RM = 重量 × 回数 ÷ 40 + 重量</p>
+      </div>
+    </section>
+  </main>
+  
+  <nav class="bottom-nav">
+    <button class="nav-btn active" data-section="training" onclick="switchSection('training')">
+      <img src="dumbbell.png" alt="">トレーニング
+    </button>
+    <button class="nav-btn" data-section="meal" onclick="switchSection('meal')">
+      <img src="plate_cutlery.png" alt="">食事記録
+    </button>
+    <button class="nav-btn" data-section="calc" onclick="switchSection('calc')">
+      <img src="calculator.png" alt="">計算
+    </button>
+  </nav>
+  
+  <!-- トレーニング記録モーダル -->
+  <div class="modal-overlay" id="record-modal">
+    <div class="modal">
+      <h2 id="modal-exercise-name"></h2>
+      <p class="modal-subtitle" id="modal-record-date"></p>
+      <p class="modal-last-record" id="modal-last-record"></p>
+      <div class="modal-target" id="modal-target" style="display:none;"></div>
+      
+      <!-- 本日の記録一覧 -->
+      <div class="modal-records" id="modal-today-records" style="display:none;">
+        <h4>📋 この日の記録（タップで削除）</h4>
+        <div id="modal-records-list"></div>
+      </div>
+      
+      <div class="modal-content">
+        <div class="modal-field">
+          <label>重量 (kg)</label>
+          <select id="modal-weight"></select>
+        </div>
+        <div class="modal-field">
+          <label>回数</label>
+          <select id="modal-reps"></select>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="cancel-btn" onclick="closeRecordModal()">キャンセル</button>
+        <button class="save-btn" onclick="saveTrainingRecord()">記録する 💪</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 週間目標モーダル -->
+  <div class="modal-overlay" id="goal-modal">
+    <div class="modal">
+      <h2>週間セット数目標</h2>
+      <div class="goal-grid" id="goal-grid"></div>
+      <div class="modal-actions">
+        <button class="cancel-btn" onclick="closeGoalModal()">キャンセル</button>
+        <button class="save-btn" onclick="saveWeeklyGoals()">保存</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 種目追加モーダル -->
+  <div class="modal-overlay" id="add-exercise-modal">
+    <div class="modal">
+      <h2>種目を追加</h2>
+      <p class="modal-subtitle" id="add-exercise-part"></p>
+      <div class="add-form">
+        <input type="text" id="new-exercise-name" placeholder="種目名を入力">
+      </div>
+      <div class="modal-actions">
+        <button class="cancel-btn" onclick="closeAddExerciseModal()">キャンセル</button>
+        <button class="save-btn" onclick="addCustomExercise()">追加</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 種目編集モーダル -->
+  <div class="modal-overlay" id="edit-exercise-modal">
+    <div class="modal">
+      <h2>種目を編集</h2>
+      <div class="add-form">
+        <input type="text" id="edit-exercise-name" placeholder="種目名">
+      </div>
+      <div class="modal-actions">
+        <button class="delete-btn" onclick="confirmDeleteExercise()">削除</button>
+        <button class="save-btn" onclick="saveEditExercise()">保存</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 食材追加モーダル -->
+  <div class="modal-overlay" id="add-food-modal">
+    <div class="modal">
+      <h2>食材を追加</h2>
+      <div class="add-form">
+        <input type="text" id="new-food-name" placeholder="食材名">
+        <input type="text" id="new-food-unit" placeholder="単位 (例: 100g, 1個)">
+        <div class="row">
+          <input type="number" id="new-food-calories" placeholder="カロリー">
+          <input type="number" id="new-food-protein" placeholder="タンパク質(g)">
+        </div>
+        <div class="row">
+          <input type="number" id="new-food-fat" placeholder="脂質(g)">
+          <input type="number" id="new-food-carbs" placeholder="炭水化物(g)">
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="cancel-btn" onclick="closeAddFoodModal()">キャンセル</button>
+        <button class="save-btn" onclick="addCustomFood()">追加</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 食材編集モーダル -->
+  <div class="modal-overlay" id="edit-food-modal">
+    <div class="modal">
+      <h2>食材を編集</h2>
+      <div class="add-form">
+        <input type="text" id="edit-food-name" placeholder="食材名">
+        <input type="text" id="edit-food-unit" placeholder="単位">
+        <div class="row">
+          <input type="number" id="edit-food-calories" placeholder="カロリー">
+          <input type="number" id="edit-food-protein" placeholder="タンパク質(g)">
+        </div>
+        <div class="row">
+          <input type="number" id="edit-food-fat" placeholder="脂質(g)">
+          <input type="number" id="edit-food-carbs" placeholder="炭水化物(g)">
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="delete-btn" onclick="confirmDeleteFood()">削除</button>
+        <button class="save-btn" onclick="saveEditFood()">保存</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- カレンダーモーダル -->
+  <div class="modal-overlay" id="calendar-modal">
+    <div class="modal">
+      <h2>📅 日付を選択</h2>
+      <div class="calendar-header">
+        <button class="calendar-nav" onclick="changeCalendarMonth(-1)">◀</button>
+        <span class="calendar-month" id="calendar-month"></span>
+        <button class="calendar-nav" onclick="changeCalendarMonth(1)">▶</button>
+      </div>
+      <div class="calendar-grid" id="calendar-grid"></div>
+      <div class="modal-actions">
+        <button class="cancel-btn" onclick="closeCalendarModal()">キャンセル</button>
+        <button class="save-btn" onclick="goToToday()">今日に戻る</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- クイック入力モーダル -->
+  <div class="modal-overlay" id="quick-entry-modal">
+    <div class="modal">
+      <h2>⚡ クイック入力</h2>
+      <p class="modal-subtitle">PFCを入力して1回だけ記録</p>
+      <div class="quick-entry-form">
+        <div class="row">
+          <div class="field">
+            <label>タンパク質 (g)</label>
+            <input type="number" id="quick-protein" placeholder="0" oninput="updateQuickCalories()">
+          </div>
+          <div class="field">
+            <label>脂質 (g)</label>
+            <input type="number" id="quick-fat" placeholder="0" oninput="updateQuickCalories()">
+          </div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label>炭水化物 (g)</label>
+            <input type="number" id="quick-carbs" placeholder="0" oninput="updateQuickCalories()">
+          </div>
+          <div class="field">
+            <label>カロリー (自動計算)</label>
+            <input type="number" id="quick-calories" placeholder="自動">
+          </div>
+        </div>
+        <p class="auto-calc-note">💡 カロリー未入力時はPFCから自動計算</p>
+      </div>
+      <div class="modal-actions">
+        <button class="cancel-btn" onclick="closeQuickEntryModal()">キャンセル</button>
+        <button class="save-btn" onclick="saveQuickEntry()">記録する</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- RM換算表モーダル -->
+  <div class="modal-overlay" id="rm-table-modal">
+    <div class="modal">
+      <h2>📊 RM換算表</h2>
+      <p class="modal-subtitle" id="rm-table-type">ベンチプレス</p>
+      <div class="rm-table-container" id="rm-table-container"></div>
+      <div class="modal-actions">
+        <button class="save-btn" onclick="closeRmTableModal()">閉じる</button>
+      </div>
+    </div>
+  </div>
+  
+  <div class="toast" id="toast"></div>
+  
+  <script>
+    const DEFAULT_BODY_PARTS = [
+      { id: 'chest', name: '胸', icon: 'incline_dumbbell_press.png', color: '#FF6B6B', short: '胸' },
+      { id: 'shoulder', name: '肩', icon: 'side_raise.png', color: '#4ADE80', short: '肩' },
+      { id: 'back', name: '背中', icon: 'pull_up.png', color: '#60A5FA', short: '背' },
+      { id: 'arm', name: '腕', icon: 'preacher_curl.png', color: '#FBBF24', short: '腕' },
+      { id: 'leg', name: '脚', icon: 'squat.png', color: '#A855F7', short: '脚' }
+    ];
+    
+    const DEFAULT_EXERCISES = {
+      chest: [
+        { id: 'bench_press', name: 'ベンチプレス', custom: false },
+        { id: 'incline_d_press', name: 'インクラインDプレス', custom: false },
+        { id: 'incline_b_press', name: 'インクラインBプレス', custom: false },
+        { id: 'pec_fly', name: 'ペックフライ', custom: false },
+        { id: 'cable_crossover', name: 'ケーブルクロスオーバー', custom: false },
+        { id: 'dips', name: 'ディップス', custom: false }
+      ],
+      shoulder: [
+        { id: 'smith_shoulder_press', name: 'スミスショルダープレス', custom: false },
+        { id: 'side_raise', name: 'サイドレイズ', custom: false },
+        { id: 'rear_delt', name: 'リアデルト', custom: false },
+        { id: 'face_pull', name: 'フェイスプル', custom: false },
+        { id: 'upright_row', name: 'アップライトロウ', custom: false },
+        { id: 'lateral_raise', name: 'ラテラルレイズ', custom: false }
+      ],
+      back: [
+        { id: 'deadlift', name: 'デッドリフト', custom: false },
+        { id: 'lat_pulldown', name: 'ラットプルダウン', custom: false },
+        { id: 'd_rowing', name: 'Dロウイング', custom: false },
+        { id: 'bent_over_row', name: 'ベントオーバーロウ', custom: false },
+        { id: 'seated_row', name: 'シーテッドロウ', custom: false },
+        { id: 'pull_up', name: '懸垂', custom: false }
+      ],
+      arm: [
+        { id: 'ez_bar_curl', name: 'EZバーカール', custom: false },
+        { id: 'incline_d_curl', name: 'インクラインDカール', custom: false },
+        { id: 'cable_bayesian_curl', name: 'ケーブルベイジアンカール', custom: false },
+        { id: 'preacher_curl', name: 'プリーチャーカール', custom: false },
+        { id: 'french_press', name: 'フレンチプレス', custom: false },
+        { id: 'smith_narrow_press', name: 'スミスナロープレス', custom: false },
+        { id: 'lying_extension', name: 'ライイングEX', custom: false }
+      ],
+      leg: [
+        { id: 'squat', name: 'スクワット', custom: false },
+        { id: 'leg_press', name: 'レッグプレス', custom: false },
+        { id: 'leg_curl', name: 'レッグカール', custom: false },
+        { id: 'leg_extension', name: 'レッグEX', custom: false },
+        { id: 'bulgarian_squat', name: 'ブルガリアンスクワット', custom: false }
+      ]
+    };
+    
+    const DEFAULT_FOODS = [
+      { id: 'chicken_breast', name: '鶏むね肉', protein: 23, fat: 1.5, carbs: 0, calories: 108, unit: '100g', custom: false },
+      { id: 'chicken_sasami', name: '鶏ささみ', protein: 9.2, fat: 0.3, carbs: 0, calories: 40, unit: '1本(40g)', custom: false },
+      { id: 'egg', name: '卵', protein: 6.2, fat: 5.2, carbs: 0.2, calories: 76, unit: '1個', custom: false },
+      { id: 'rice', name: '白米', protein: 2.5, fat: 0.3, carbs: 37, calories: 168, unit: '100g', custom: false },
+      { id: 'protein_powder', name: 'プロテイン', protein: 24, fat: 1, carbs: 3, calories: 120, unit: '1スクープ', custom: false },
+      { id: 'banana', name: 'バナナ', protein: 1.1, fat: 0.2, carbs: 22.5, calories: 86, unit: '1本', custom: false },
+      { id: 'sweet_potato', name: 'さつまいも', protein: 1.2, fat: 0.2, carbs: 31, calories: 132, unit: '100g', custom: false },
+      { id: 'sardine_can', name: 'イワシ缶', protein: 18, fat: 12, carbs: 6, calories: 210, unit: '1缶', custom: false },
+      { id: 'beef_liver', name: '牛レバー', protein: 6, fat: 1.2, carbs: 1.2, calories: 40, unit: '30g', custom: false },
+      { id: 'avocado', name: 'アボカド', protein: 1.4, fat: 13, carbs: 4.4, calories: 130, unit: '半個(70g)', custom: false },
+      { id: 'almond', name: 'アーモンド', protein: 2.9, fat: 7.6, carbs: 2.8, calories: 85, unit: '10粒', custom: false },
+      { id: 'broccoli', name: 'ブロッコリー', protein: 4.3, fat: 0.5, carbs: 5.2, calories: 33, unit: '100g', custom: false },
+      { id: 'asparagus', name: 'アスパラガス', protein: 1.3, fat: 0.1, carbs: 2, calories: 11, unit: '50g', custom: false }
+    ];
+    
+    const MEAL_TYPES = [
+      { id: 'breakfast', name: '朝食', icon: '🌅' },
+      { id: 'lunch', name: '昼食', icon: '☀️' },
+      { id: 'dinner', name: '夕食', icon: '🌙' },
+      { id: 'snack', name: '間食', icon: '🍎' }
+    ];
+    
+    const DAY_NAMES = ['月', '火', '水', '木', '金', '土', '日'];
+    const DAY_NAMES_FULL = ['日', '月', '火', '水', '木', '金', '土'];
+    const MAX_WEEKS_BACK = 13;
+    
+    let currentDate = new Date();
+    let currentWeekStart = null;
+    let calendarViewDate = new Date();
+    let currentBodyPart = 'chest';
+    let currentMealType = 'breakfast';
+    let selectedExercise = null;
+    let editingExercise = null;
+    let editingExercisePart = null;
+    let editingFood = null;
+    let selectedFoods = [];
+    let weeklyGoals = { chest: 16, shoulder: 16, back: 20, arm: 12, leg: 16 };
+    let trainingRecords = [];
+    let mealRecords = [];
+    let exercises = JSON.parse(JSON.stringify(DEFAULT_EXERCISES));
+    let foods = JSON.parse(JSON.stringify(DEFAULT_FOODS));
+    let calcSettings = {};
+    
+    function getLocalDateStr(date) {
+      const d = new Date(date);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+    
+    function parseLocalDate(dateStr) {
+      const [year, month, day] = dateStr.split('-').map(Number);
+      return new Date(year, month - 1, day, 12, 0, 0);
+    }
+    
+    function getWeekStartDate(date) {
+      const d = new Date(date);
+      d.setHours(12, 0, 0, 0);
+      const dayOfWeek = d.getDay();
+      const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+      d.setDate(d.getDate() + diff);
+      return d;
+    }
+    
+    function getWeekEndDate(weekStart) {
+      const d = new Date(weekStart);
+      d.setDate(d.getDate() + 6);
+      return d;
+    }
+    
+    function formatDateShort(date) {
+      const d = new Date(date);
+      return `${d.getMonth() + 1}/${d.getDate()}`;
+    }
+    
+    function formatDateFull(date) {
+      const d = new Date(date);
+      return `${d.getMonth() + 1}月${d.getDate()}日(${DAY_NAMES_FULL[d.getDay()]})`;
+    }
+    
+    function isSameDay(d1, d2) {
+      return getLocalDateStr(d1) === getLocalDateStr(d2);
+    }
+    
+    function isToday(date) {
+      return isSameDay(date, new Date());
+    }
+    
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+    
+    function loadData() {
+      try {
+        const g = localStorage.getItem('weeklyGoals');
+        if (g) weeklyGoals = JSON.parse(g);
+        const t = localStorage.getItem('trainingRecords');
+        if (t) trainingRecords = JSON.parse(t);
+        const m = localStorage.getItem('mealRecords');
+        if (m) mealRecords = JSON.parse(m);
+        
+        // 種目: デフォルトをベースに、カスタム種目のみ追加
+        const savedExercises = localStorage.getItem('customExercises');
+        exercises = JSON.parse(JSON.stringify(DEFAULT_EXERCISES)); // デフォルトをコピー
+        if (savedExercises) {
+          const saved = JSON.parse(savedExercises);
+          Object.keys(saved).forEach(partId => {
+            if (saved[partId]) {
+              // カスタム種目（custom: true）だけを追加
+              const customOnes = saved[partId].filter(ex => ex.custom === true);
+              if (exercises[partId]) {
+                exercises[partId] = [...exercises[partId], ...customOnes];
+              }
+            }
+          });
+        }
+        
+        // 食材: デフォルトをベースに、カスタム食材のみ追加
+        const savedFoods = localStorage.getItem('customFoods');
+        foods = JSON.parse(JSON.stringify(DEFAULT_FOODS)); // デフォルトをコピー
+        if (savedFoods) {
+          const saved = JSON.parse(savedFoods);
+          // カスタム食材（custom: true）だけを追加
+          const customOnes = saved.filter(f => f.custom === true);
+          foods = [...foods, ...customOnes];
+        }
+        
+        const c = localStorage.getItem('calcSettings');
+        if (c) {
+          calcSettings = JSON.parse(c);
+          if (calcSettings.weight) document.getElementById('calcWeight').value = calcSettings.weight;
+          if (calcSettings.height) document.getElementById('calcHeight').value = calcSettings.height;
+          if (calcSettings.age) document.getElementById('calcAge').value = calcSettings.age;
+          if (calcSettings.gender) document.getElementById('calcGender').value = calcSettings.gender;
+          if (calcSettings.activity) document.getElementById('calcActivity').value = calcSettings.activity;
+          if (calcSettings.targetWeight) document.getElementById('targetWeight').value = calcSettings.targetWeight;
+          if (calcSettings.targetWeeks) document.getElementById('targetWeeks').value = calcSettings.targetWeeks;
+        }
+      } catch (err) {}
+    }
+    
+    function saveData(key, data) {
+      try { localStorage.setItem(key, JSON.stringify(data)); } catch (e) {}
+    }
+    
+    function updateDateDisplay() {
+      const el = document.getElementById('dateDisplay');
+      const today = isToday(currentDate);
+      el.textContent = today ? '今日' : formatDateFull(currentDate);
+      el.className = 'date-display' + (today ? ' today' : '');
+    }
+    
+    function changeDate(delta) {
+      currentDate = new Date(currentDate);
+      currentDate.setDate(currentDate.getDate() + delta);
+      const newWeekStart = getWeekStartDate(currentDate);
+      if (!isSameDay(newWeekStart, currentWeekStart)) {
+        currentWeekStart = newWeekStart;
+      }
+      updateDateDisplay();
+      renderAll();
+    }
+    
+    function selectDate(dateStr) {
+      currentDate = parseLocalDate(dateStr);
+      updateDateDisplay();
+      renderAll();
+    }
+    
+    function goToToday() {
+      currentDate = new Date();
+      currentDate.setHours(12, 0, 0, 0);
+      currentWeekStart = getWeekStartDate(currentDate);
+      calendarViewDate = new Date();
+      updateDateDisplay();
+      renderAll();
+      closeCalendarModal();
+    }
+    
+    function changeWeek(delta) {
+      const today = new Date();
+      today.setHours(12, 0, 0, 0);
+      const todayWeekStart = getWeekStartDate(today);
+      const minWeekStart = new Date(todayWeekStart);
+      minWeekStart.setDate(minWeekStart.getDate() - (MAX_WEEKS_BACK * 7));
+      const newWeekStart = new Date(currentWeekStart);
+      newWeekStart.setDate(newWeekStart.getDate() + (delta * 7));
+      if (newWeekStart > todayWeekStart) return;
+      if (newWeekStart < minWeekStart) return;
+      currentWeekStart = newWeekStart;
+      const currentDayOfWeek = currentDate.getDay();
+      const targetDayOffset = currentDayOfWeek === 0 ? 6 : currentDayOfWeek - 1;
+      currentDate = new Date(currentWeekStart);
+      currentDate.setDate(currentDate.getDate() + targetDayOffset);
+      updateDateDisplay();
+      renderAll();
+    }
+    
+    function updateWeekNav() {
+      const today = new Date();
+      today.setHours(12, 0, 0, 0);
+      const todayWeekStart = getWeekStartDate(today);
+      const minWeekStart = new Date(todayWeekStart);
+      minWeekStart.setDate(minWeekStart.getDate() - (MAX_WEEKS_BACK * 7));
+      const weekEnd = getWeekEndDate(currentWeekStart);
+      const isCurrentWeek = isSameDay(currentWeekStart, todayWeekStart);
+      document.getElementById('weekLabel').innerHTML = `
+        ${formatDateShort(currentWeekStart)} 〜 ${formatDateShort(weekEnd)}
+        <small>${isCurrentWeek ? '今週' : ''}</small>
+      `;
+      document.getElementById('prevWeekBtn').disabled = currentWeekStart <= minWeekStart;
+      document.getElementById('nextWeekBtn').disabled = currentWeekStart >= todayWeekStart;
+    }
+    
+    function getTrainingPartsForDate(dateStr) {
+      const parts = new Set();
+      trainingRecords.forEach(r => {
+        if (getLocalDateStr(new Date(r.date)) === dateStr) {
+          parts.add(r.bodyPart);
+        }
+      });
+      return Array.from(parts);
+    }
+    
+    function renderPartDots(parts, isToday = false) {
+      if (parts.length === 0) return '';
+      return parts.map(partId => {
+        const part = DEFAULT_BODY_PARTS.find(p => p.id === partId);
+        return `<div class="day-part-dot" style="background: ${part.color};"></div>`;
+      }).join('');
+    }
+    
+    function renderWeekCalendar() {
+      const container = document.getElementById('weekCalendar');
+      const todayStr = getLocalDateStr(new Date());
+      const selectedStr = getLocalDateStr(currentDate);
+      let html = '';
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(currentWeekStart);
+        d.setDate(d.getDate() + i);
+        const dateStr = getLocalDateStr(d);
+        const isT = dateStr === todayStr;
+        const isS = dateStr === selectedStr;
+        const parts = getTrainingPartsForDate(dateStr);
+        html += `
+          <div class="week-day ${isT ? 'today' : ''} ${isS ? 'selected' : ''}" onclick="selectDate('${dateStr}')">
+            <div class="day-name">${DAY_NAMES[i]}</div>
+            <div class="day-num">${d.getDate()}</div>
+            <div class="day-parts">${renderPartDots(parts, isT)}</div>
+          </div>
+        `;
+      }
+      container.innerHTML = html;
+    }
+    
+    function openCalendarModal() {
+      calendarViewDate = new Date(currentDate);
+      renderCalendar();
+      document.getElementById('calendar-modal').classList.add('active');
+    }
+    
+    function closeCalendarModal() {
+      document.getElementById('calendar-modal').classList.remove('active');
+    }
+    
+    function changeCalendarMonth(delta) {
+      calendarViewDate.setMonth(calendarViewDate.getMonth() + delta);
+      renderCalendar();
+    }
+    
+    function renderCalendar() {
+      const year = calendarViewDate.getFullYear();
+      const month = calendarViewDate.getMonth();
+      document.getElementById('calendar-month').textContent = `${year}年 ${month + 1}月`;
+      const firstDay = new Date(year, month, 1);
+      const lastDay = new Date(year, month + 1, 0);
+      const startDay = firstDay.getDay();
+      const todayStr = getLocalDateStr(new Date());
+      const selectedStr = getLocalDateStr(currentDate);
+      
+      let html = DAY_NAMES_FULL.map(d => `<div class="calendar-weekday">${d}</div>`).join('');
+      
+      const prevMonth = new Date(year, month, 0);
+      for (let i = startDay - 1; i >= 0; i--) {
+        const day = prevMonth.getDate() - i;
+        html += `<button class="calendar-day other-month" disabled><span class="calendar-day-num">${day}</span></button>`;
+      }
+      
+      for (let day = 1; day <= lastDay.getDate(); day++) {
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const isT = dateStr === todayStr;
+        const isS = dateStr === selectedStr;
+        const parts = getTrainingPartsForDate(dateStr);
+        const partDotsHtml = parts.map(partId => {
+          const part = DEFAULT_BODY_PARTS.find(p => p.id === partId);
+          return `<div class="calendar-part-dot" style="background: ${part.color};"></div>`;
+        }).join('');
+        
+        html += `
+          <button class="calendar-day ${isT ? 'today' : ''} ${isS ? 'selected' : ''}" onclick="selectDateFromCalendar('${dateStr}')">
+            <span class="calendar-day-num">${day}</span>
+            ${parts.length > 0 ? `<div class="calendar-day-parts">${partDotsHtml}</div>` : ''}
+          </button>
+        `;
+      }
+      
+      const remaining = 42 - (startDay + lastDay.getDate());
+      for (let day = 1; day <= remaining; day++) {
+        html += `<button class="calendar-day other-month" disabled><span class="calendar-day-num">${day}</span></button>`;
+      }
+      
+      document.getElementById('calendar-grid').innerHTML = html;
+    }
+    
+    function selectDateFromCalendar(dateStr) {
+      currentDate = parseLocalDate(dateStr);
+      currentWeekStart = getWeekStartDate(currentDate);
+      updateDateDisplay();
+      renderAll();
+      closeCalendarModal();
+    }
+    
+    function switchSection(section) {
+      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+      document.getElementById(`${section}-section`).classList.add('active');
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.section === section);
+      });
+      if (section === 'meal') renderMealSection();
+      if (section === 'calc') updateCalc();
+    }
+    
+    function renderAll() {
+      updateWeekNav();
+      renderWeekCalendar();
+      renderProgressCard();
+      renderTrainingRecordsList();
+      renderBodyTabs();
+      renderExercises();
+      renderMealSection();
+    }
+    
+    function getWeeklySets(bodyPart) {
+      const weekStartStr = getLocalDateStr(currentWeekStart);
+      const weekEndStr = getLocalDateStr(getWeekEndDate(currentWeekStart));
+      return trainingRecords.filter(r => {
+        const d = getLocalDateStr(new Date(r.date));
+        return r.bodyPart === bodyPart && d >= weekStartStr && d <= weekEndStr;
+      }).length;
+    }
+    
+    function getLastRecord(exerciseId) {
+      const records = trainingRecords
+        .filter(r => r.exerciseId === exerciseId)
+        .sort((a, b) => new Date(b.date) - new Date(a.date));
+      return records[0] || null;
+    }
+    
+    function getLastSessionRecords(exerciseId) {
+      const records = trainingRecords
+        .filter(r => r.exerciseId === exerciseId)
+        .sort((a, b) => new Date(b.date) - new Date(a.date));
+      if (records.length === 0) return [];
+      const lastDateStr = getLocalDateStr(new Date(records[0].date));
+      return records.filter(r => getLocalDateStr(new Date(r.date)) === lastDateStr);
+    }
+    
+    function calculateNextTarget(lastSessionRecords) {
+      if (lastSessionRecords.length === 0) return null;
+      const lastTotal = lastSessionRecords.reduce((sum, r) => sum + (r.weight * r.reps), 0);
+      const setCount = lastSessionRecords.length;
+      const avgWeight = lastSessionRecords.reduce((sum, r) => sum + r.weight, 0) / setCount;
+      const avgReps = lastSessionRecords.reduce((sum, r) => sum + r.reps, 0) / setCount;
+      const targetTotal = lastTotal * 1.01;
+      const newWeightOption = Math.ceil(avgWeight / 2.5) * 2.5 + 2.5;
+      const newRepsOption = Math.ceil(avgReps) + 1;
+      const totalWithNewReps = avgWeight * newRepsOption * setCount;
+      if (totalWithNewReps >= targetTotal && newRepsOption <= avgReps + 2) {
+        return { weight: avgWeight, reps: newRepsOption, sets: setCount, total: avgWeight * newRepsOption * setCount, lastTotal, lastDate: lastSessionRecords[0].date };
+      } else {
+        return { weight: newWeightOption, reps: Math.ceil(avgReps), sets: setCount, total: newWeightOption * Math.ceil(avgReps) * setCount, lastTotal, lastDate: lastSessionRecords[0].date };
+      }
+    }
+    
+    function renderProgressCard() {
+      const container = document.getElementById('progress-container');
+      container.innerHTML = DEFAULT_BODY_PARTS.map(part => {
+        const done = getWeeklySets(part.id);
+        const goal = weeklyGoals[part.id] || 16;
+        const remaining = Math.max(0, goal - done);
+        const percent = Math.min(100, (done / goal) * 100);
+        return `
+          <div class="progress-item">
+            <span class="progress-label">${part.icon} ${part.name}</span>
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: ${percent}%; background: ${part.color};"></div>
+            </div>
+            <span class="progress-text">${done}/${goal} <span class="remaining">あと${remaining}</span></span>
+          </div>
+        `;
+      }).join('');
+    }
+    
+    // トレーニング記録一覧
+    function renderTrainingRecordsList() {
+      const dateStr = getLocalDateStr(currentDate);
+      const dayRecords = trainingRecords.filter(r => getLocalDateStr(new Date(r.date)) === dateStr);
+      const labelText = isToday(currentDate) ? '今日' : formatDateShort(currentDate);
+      document.getElementById('training-records-date').textContent = labelText;
+      
+      const container = document.getElementById('training-records-list');
+      if (dayRecords.length === 0) {
+        container.innerHTML = '<div class="no-records">記録がありません</div>';
+        return;
+      }
+      
+      container.innerHTML = dayRecords.map(r => {
+        const part = DEFAULT_BODY_PARTS.find(p => p.id === r.bodyPart);
+        return `
+          <div class="record-item">
+            <div class="record-info">
+              <div class="record-name" style="color: ${part ? part.color : '#fff'};">${r.exerciseName}</div>
+              <div class="record-detail">${r.weight}kg × ${r.reps}回</div>
+            </div>
+            <button class="record-delete-btn" onclick="deleteTrainingRecord(${r.id})">×</button>
+          </div>
+        `;
+      }).join('');
+    }
+    
+    function deleteTrainingRecord(recordId) {
+      trainingRecords = trainingRecords.filter(r => r.id !== recordId);
+      saveData('trainingRecords', trainingRecords);
+      renderAll();
+      showToast('削除しました');
+    }
+    
+    function renderBodyTabs() {
+      const container = document.getElementById('body-tabs');
+      container.innerHTML = DEFAULT_BODY_PARTS.map(part => `
+        <button class="body-tab ${currentBodyPart === part.id ? 'active' : ''}" 
+                style="color: ${part.color};"
+                onclick="switchBodyPart('${part.id}')">
+          <img src="${part.icon}" alt="${part.name}">
+        </button>
+      `).join('');
+    }
+    
+    function switchBodyPart(partId) {
+      currentBodyPart = partId;
+      renderBodyTabs();
+      renderExercises();
+    }
+    
+    function renderExercises() {
+      const part = DEFAULT_BODY_PARTS.find(p => p.id === currentBodyPart);
+      document.getElementById('exercisePartName').textContent = `${part.icon} ${part.name}の種目`;
+      const container = document.getElementById('exercise-grid');
+      const dateStr = getLocalDateStr(currentDate);
+      const partExercises = exercises[currentBodyPart] || [];
+      
+      container.innerHTML = partExercises.map(exercise => {
+        const lastRecord = getLastRecord(exercise.id);
+        const todayRecords = trainingRecords.filter(r => 
+          r.exerciseId === exercise.id && getLocalDateStr(new Date(r.date)) === dateStr
+        );
+        return `
+          <div class="exercise-card ${exercise.custom ? 'custom' : ''}" 
+               onclick="openRecordModal('${exercise.id}')"
+               oncontextmenu="event.preventDefault(); ${exercise.custom ? `openEditExerciseModal('${exercise.id}')` : ''}"
+               ontouchstart="handleExerciseLongPress(event, '${exercise.id}', ${!!exercise.custom})">
+            <h3>${exercise.name}</h3>
+            ${todayRecords.length > 0 ? `
+              <p class="last-record today-record">本日: ${todayRecords.map(r => `${r.weight}kg×${r.reps}`).join(', ')}</p>
+            ` : ''}
+            ${lastRecord && getLocalDateStr(new Date(lastRecord.date)) !== dateStr ? `
+              <p class="last-record">前回: ${lastRecord.weight}kg × ${lastRecord.reps}回<br><span class="last-date">${formatDateShort(lastRecord.date)}</span></p>
+            ` : ''}
+            ${!lastRecord && todayRecords.length === 0 ? '<p class="no-record">記録なし</p>' : ''}
+          </div>
+        `;
+      }).join('');
+    }
+    
+    let longPressTimer;
+    function handleExerciseLongPress(event, exerciseId, isCustom) {
+      if (!isCustom) return;
+      longPressTimer = setTimeout(() => { openEditExerciseModal(exerciseId); }, 500);
+    }
+    document.addEventListener('touchend', () => clearTimeout(longPressTimer));
+    document.addEventListener('touchmove', () => clearTimeout(longPressTimer));
+    
+    function openRecordModal(exerciseId) {
+      const partExercises = exercises[currentBodyPart] || [];
+      const exercise = partExercises.find(e => e.id === exerciseId);
+      if (!exercise) return;
+      
+      selectedExercise = exercise;
+      document.getElementById('modal-exercise-name').textContent = exercise.name;
+      document.getElementById('modal-record-date').textContent = formatDateFull(currentDate);
+      
+      const lastRecord = getLastRecord(exerciseId);
+      const lastRecordEl = document.getElementById('modal-last-record');
+      let defaultWeight = 20;
+      let defaultReps = 10;
+      
+      if (lastRecord) {
+        defaultWeight = lastRecord.weight;
+        defaultReps = lastRecord.reps;
+        lastRecordEl.textContent = `🎯 前回: ${lastRecord.weight}kg × ${lastRecord.reps}回`;
+        lastRecordEl.style.display = 'block';
+      } else {
+        lastRecordEl.style.display = 'none';
+      }
+      
+      const targetEl = document.getElementById('modal-target');
+      const lastSessionRecords = getLastSessionRecords(exerciseId);
+      const nextTarget = calculateNextTarget(lastSessionRecords);
+      if (nextTarget && lastSessionRecords.length > 0) {
+        const lastDateFormatted = formatDateShort(nextTarget.lastDate);
+        const improvement = ((nextTarget.total / nextTarget.lastTotal - 1) * 100).toFixed(1);
+        targetEl.innerHTML = `💡 前回(${lastDateFormatted}): ${nextTarget.lastTotal.toFixed(0)}kg<br><strong>🎯 目標: ${nextTarget.weight}kg × ${nextTarget.reps}回 × ${nextTarget.sets}set = ${nextTarget.total.toFixed(0)}kg (+${improvement}%)</strong>`;
+        targetEl.style.display = 'block';
+      } else {
+        targetEl.style.display = 'none';
+      }
+      
+      // この日の記録一覧
+      const dateStr = getLocalDateStr(currentDate);
+      const dayRecords = trainingRecords.filter(r => r.exerciseId === exerciseId && getLocalDateStr(new Date(r.date)) === dateStr);
+      const modalRecordsEl = document.getElementById('modal-today-records');
+      const modalRecordsListEl = document.getElementById('modal-records-list');
+      
+      if (dayRecords.length > 0) {
+        modalRecordsListEl.innerHTML = dayRecords.map(r => `
+          <div class="modal-record-item">
+            <span class="modal-record-text">${r.weight}kg × ${r.reps}回</span>
+            <button class="modal-record-delete" onclick="deleteTrainingRecordFromModal(${r.id})">×</button>
+          </div>
+        `).join('');
+        modalRecordsEl.style.display = 'block';
+      } else {
+        modalRecordsEl.style.display = 'none';
+      }
+      
+      const weightSelect = document.getElementById('modal-weight');
+      weightSelect.innerHTML = Array.from({ length: 80 }, (_, i) => (i + 1) * 2.5)
+        .map(w => `<option value="${w}" ${w === defaultWeight ? 'selected' : ''}>${w} kg</option>`)
+        .join('');
+      
+      const repsSelect = document.getElementById('modal-reps');
+      repsSelect.innerHTML = Array.from({ length: 50 }, (_, i) => i + 1)
+        .map(r => `<option value="${r}" ${r === defaultReps ? 'selected' : ''}>${r} 回</option>`)
+        .join('');
+      
+      document.getElementById('record-modal').classList.add('active');
+    }
+    
+    function deleteTrainingRecordFromModal(recordId) {
+      trainingRecords = trainingRecords.filter(r => r.id !== recordId);
+      saveData('trainingRecords', trainingRecords);
+      
+      // モーダル内の記録一覧を更新
+      if (selectedExercise) {
+        const dateStr = getLocalDateStr(currentDate);
+        const dayRecords = trainingRecords.filter(r => r.exerciseId === selectedExercise.id && getLocalDateStr(new Date(r.date)) === dateStr);
+        const modalRecordsEl = document.getElementById('modal-today-records');
+        const modalRecordsListEl = document.getElementById('modal-records-list');
+        
+        if (dayRecords.length > 0) {
+          modalRecordsListEl.innerHTML = dayRecords.map(r => `
+            <div class="modal-record-item">
+              <span class="modal-record-text">${r.weight}kg × ${r.reps}回</span>
+              <button class="modal-record-delete" onclick="deleteTrainingRecordFromModal(${r.id})">×</button>
+            </div>
+          `).join('');
+        } else {
+          modalRecordsEl.style.display = 'none';
+        }
+      }
+      
+      renderAll();
+      showToast('削除しました');
+    }
+    
+    function closeRecordModal() {
+      document.getElementById('record-modal').classList.remove('active');
+      selectedExercise = null;
+    }
+    
+    function saveTrainingRecord() {
+      if (!selectedExercise) return;
+      const weight = parseFloat(document.getElementById('modal-weight').value);
+      const reps = parseInt(document.getElementById('modal-reps').value);
+      const recordDate = new Date(currentDate);
+      recordDate.setHours(12, 0, 0, 0);
+      const newRecord = {
+        id: Date.now(),
+        exerciseId: selectedExercise.id,
+        exerciseName: selectedExercise.name,
+        bodyPart: currentBodyPart,
+        weight,
+        reps,
+        date: recordDate.toISOString()
+      };
+      trainingRecords.push(newRecord);
+      saveData('trainingRecords', trainingRecords);
+      closeRecordModal();
+      renderAll();
+      showToast('記録しました！💪');
+    }
+    
+    function openAddExerciseModal() {
+      const part = DEFAULT_BODY_PARTS.find(p => p.id === currentBodyPart);
+      document.getElementById('add-exercise-part').textContent = `${part.icon} ${part.name}に追加`;
+      document.getElementById('new-exercise-name').value = '';
+      document.getElementById('add-exercise-modal').classList.add('active');
+    }
+    
+    function closeAddExerciseModal() {
+      document.getElementById('add-exercise-modal').classList.remove('active');
+    }
+    
+    function addCustomExercise() {
+      const name = document.getElementById('new-exercise-name').value.trim();
+      if (!name) { showToast('種目名を入力してください'); return; }
+      const id = 'custom_' + Date.now();
+      if (!exercises[currentBodyPart]) exercises[currentBodyPart] = [];
+      exercises[currentBodyPart].push({ id, name, custom: true });
+      saveData('customExercises', exercises);
+      closeAddExerciseModal();
+      renderExercises();
+      showToast('種目を追加しました！');
+    }
+    
+    function openEditExerciseModal(exerciseId) {
+      const partExercises = exercises[currentBodyPart] || [];
+      const exercise = partExercises.find(e => e.id === exerciseId);
+      if (!exercise || !exercise.custom) return;
+      editingExercise = exercise;
+      editingExercisePart = currentBodyPart;
+      document.getElementById('edit-exercise-name').value = exercise.name;
+      const modal = document.getElementById('edit-exercise-modal');
+      modal.style.display = '';
+      modal.classList.add('active');
+    }
+    
+    function closeEditExerciseModal() {
+      const modal = document.getElementById('edit-exercise-modal');
+      modal.classList.remove('active');
+      modal.style.display = '';
+      editingExercise = null;
+      editingExercisePart = null;
+    }
+    
+    function saveEditExercise() {
+      if (!editingExercise || !editingExercisePart) return;
+      const name = document.getElementById('edit-exercise-name').value.trim();
+      if (!name) { showToast('種目名を入力してください'); return; }
+      const idx = exercises[editingExercisePart].findIndex(e => e.id === editingExercise.id);
+      if (idx !== -1) {
+        exercises[editingExercisePart][idx].name = name;
+        saveData('customExercises', exercises);
+      }
+      closeEditExerciseModal();
+      renderExercises();
+      showToast('保存しました！');
+    }
+    
+    function confirmDeleteExercise() {
+      if (!editingExercise || !editingExercisePart) return;
+      const exerciseId = editingExercise.id;
+      const partId = editingExercisePart;
+      exercises[partId] = exercises[partId].filter(e => e.id !== exerciseId);
+      saveData('customExercises', exercises);
+      closeEditExerciseModal();
+      renderExercises();
+      showToast('削除しました');
+    }
+    
+    function openGoalModal() {
+      const container = document.getElementById('goal-grid');
+      container.innerHTML = DEFAULT_BODY_PARTS.map(part => `
+        <div class="goal-item">
+          <label>${part.icon} ${part.name}</label>
+          <input type="number" id="goal-${part.id}" value="${weeklyGoals[part.id] || 16}">
+        </div>
+      `).join('');
+      document.getElementById('goal-modal').classList.add('active');
+    }
+    
+    function closeGoalModal() {
+      document.getElementById('goal-modal').classList.remove('active');
+    }
+    
+    function saveWeeklyGoals() {
+      DEFAULT_BODY_PARTS.forEach(part => {
+        weeklyGoals[part.id] = parseInt(document.getElementById(`goal-${part.id}`).value) || 16;
+      });
+      saveData('weeklyGoals', weeklyGoals);
+      closeGoalModal();
+      renderProgressCard();
+      showToast('目標を保存しました！');
+    }
+    
+    // 食事セクション
+    function getTargetNutrition() {
+      const weight = parseFloat(document.getElementById('calcWeight').value) || 70;
+      const height = parseFloat(document.getElementById('calcHeight').value) || 170;
+      const age = parseInt(document.getElementById('calcAge').value) || 30;
+      const gender = document.getElementById('calcGender').value;
+      const activity = parseFloat(document.getElementById('calcActivity').value) || 1.55;
+      const targetWeight = parseFloat(document.getElementById('targetWeight').value) || 65;
+      const targetWeeks = parseInt(document.getElementById('targetWeeks').value) || 12;
+      let bmr = gender === 'male' ? 10 * weight + 6.25 * height - 5 * age + 5 : 10 * weight + 6.25 * height - 5 * age - 161;
+      const tdee = bmr * activity;
+      const weightDiff = weight - targetWeight;
+      const dailyDeficit = (weightDiff * 7700) / (targetWeeks * 7);
+      const targetCal = tdee - dailyDeficit;
+      return {
+        calories: Math.round(targetCal),
+        protein: Math.round(weight * 2),
+        fat: Math.round(targetCal * 0.25 / 9),
+        carbs: Math.round((targetCal - weight * 2 * 4 - targetCal * 0.25) / 4)
+      };
+    }
+    
+    function getDayNutrition(dateStr) {
+      const dayMeals = mealRecords.filter(r => getLocalDateStr(new Date(r.date)) === dateStr);
+      return dayMeals.reduce((acc, meal) => {
+        meal.foods.forEach(f => {
+          acc.calories += f.calories * f.quantity;
+          acc.protein += f.protein * f.quantity;
+          acc.fat += f.fat * f.quantity;
+          acc.carbs += f.carbs * f.quantity;
+        });
+        return acc;
+      }, { calories: 0, protein: 0, fat: 0, carbs: 0 });
+    }
+    
+    function renderMealSection() {
+      const dateStr = getLocalDateStr(currentDate);
+      const isDateToday = isToday(currentDate);
+      const labelText = isDateToday ? '今日' : formatDateShort(currentDate);
+      document.getElementById('meal-date-label').textContent = labelText;
+      document.getElementById('meal-records-date').textContent = labelText;
+      
+      const n = getDayNutrition(dateStr);
+      document.getElementById('nutrition-grid').innerHTML = `
+        <div class="nutrition-item"><span class="nutrition-value">${Math.round(n.calories)}</span><span class="nutrition-label">kcal</span></div>
+        <div class="nutrition-item"><span class="nutrition-value" style="color: #FF6B6B;">${Math.round(n.protein)}g</span><span class="nutrition-label">タンパク質</span></div>
+        <div class="nutrition-item"><span class="nutrition-value" style="color: #FFEAA7;">${Math.round(n.fat)}g</span><span class="nutrition-label">脂質</span></div>
+        <div class="nutrition-item"><span class="nutrition-value" style="color: #4ECDC4;">${Math.round(n.carbs)}g</span><span class="nutrition-label">炭水化物</span></div>
+      `;
+      
+      const target = getTargetNutrition();
+      const diffCal = n.calories - target.calories;
+      const diffProtein = n.protein - target.protein;
+      const diffFat = n.fat - target.fat;
+      const diffCarbs = n.carbs - target.carbs;
+      
+      document.getElementById('diff-grid').innerHTML = `
+        <div class="diff-item"><span class="diff-value ${diffCal >= 0 ? 'negative' : 'positive'}">${diffCal >= 0 ? '+' : ''}${Math.round(diffCal)}</span><span class="diff-label">kcal</span></div>
+        <div class="diff-item"><span class="diff-value ${diffProtein >= 0 ? 'positive' : 'negative'}">${diffProtein >= 0 ? '+' : ''}${Math.round(diffProtein)}g</span><span class="diff-label">タンパク質</span></div>
+        <div class="diff-item"><span class="diff-value ${diffFat >= 0 ? 'negative' : 'positive'}">${diffFat >= 0 ? '+' : ''}${Math.round(diffFat)}g</span><span class="diff-label">脂質</span></div>
+        <div class="diff-item"><span class="diff-value ${diffCarbs >= 0 ? 'negative' : 'positive'}">${diffCarbs >= 0 ? '+' : ''}${Math.round(diffCarbs)}g</span><span class="diff-label">炭水化物</span></div>
+      `;
+      
+      // 食事記録一覧
+      renderMealRecordsList();
+      
+      document.getElementById('meal-tabs').innerHTML = MEAL_TYPES.map(type => `
+        <button class="meal-tab ${currentMealType === type.id ? 'active' : ''}" onclick="switchMealType('${type.id}')">${type.icon} ${type.name}</button>
+      `).join('');
+      
+      renderFoodGrid();
+    }
+    
+    function renderMealRecordsList() {
+      const dateStr = getLocalDateStr(currentDate);
+      const dayMeals = mealRecords.filter(r => getLocalDateStr(new Date(r.date)) === dateStr);
+      const container = document.getElementById('meal-records-list');
+      
+      if (dayMeals.length === 0) {
+        container.innerHTML = '<div class="no-records">記録がありません</div>';
+        return;
+      }
+      
+      container.innerHTML = dayMeals.map(meal => {
+        const mealType = MEAL_TYPES.find(t => t.id === meal.mealType);
+        const totalCal = meal.foods.reduce((sum, f) => sum + f.calories * f.quantity, 0);
+        const foodNames = meal.foods.map(f => f.quantity > 1 ? `${f.name}×${f.quantity}` : f.name).join(', ');
+        return `
+          <div class="record-item">
+            <div class="record-info">
+              <div class="record-name">${mealType ? mealType.icon : '🍽️'} ${mealType ? mealType.name : '食事'}</div>
+              <div class="record-detail">${foodNames} (${Math.round(totalCal)}kcal)</div>
+            </div>
+            <button class="record-delete-btn" onclick="deleteMealRecord(${meal.id})">×</button>
+          </div>
+        `;
+      }).join('');
+    }
+    
+    function deleteMealRecord(recordId) {
+      mealRecords = mealRecords.filter(r => r.id !== recordId);
+      saveData('mealRecords', mealRecords);
+      renderMealSection();
+      showToast('削除しました');
+    }
+    
+    function switchMealType(typeId) {
+      currentMealType = typeId;
+      renderMealSection();
+    }
+    
+    function renderFoodGrid() {
+      let html = `
+        <div class="food-card quick-entry" onclick="openQuickEntryModal()">
+          <h4>⚡ クイック入力</h4>
+          <p class="food-info">PFCを直接入力</p>
+          <p class="food-macros">1回限りの記録</p>
+          <p class="food-calories">自動計算</p>
+        </div>
+      `;
+      html += foods.map(food => {
+        const selected = selectedFoods.find(f => f.id === food.id);
+        return `
+          <div class="food-card ${selected ? 'selected' : ''} ${food.custom ? 'custom' : ''}" 
+               onclick="toggleFood('${food.id}')"
+               oncontextmenu="event.preventDefault(); ${food.custom ? `openEditFoodModal('${food.id}')` : ''}"
+               ontouchstart="handleFoodLongPress(event, '${food.id}', ${!!food.custom})">
+            <h4>${food.name}</h4>
+            <p class="food-info">${food.unit}</p>
+            <p class="food-macros">P:${food.protein}g F:${food.fat}g C:${food.carbs}g</p>
+            <p class="food-calories">${food.calories} kcal</p>
+            ${selected ? `
+              <div class="quantity-control" onclick="event.stopPropagation()">
+                <button class="qty-btn" onclick="adjustQty('${food.id}', -1)">−</button>
+                <span class="qty-value">${selected.quantity}</span>
+                <button class="qty-btn" onclick="adjustQty('${food.id}', 1)">+</button>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }).join('');
+      document.getElementById('food-grid').innerHTML = html;
+      document.getElementById('add-meal-btn').style.display = selectedFoods.length > 0 ? 'block' : 'none';
+    }
+    
+    function handleFoodLongPress(event, foodId, isCustom) {
+      if (!isCustom) return;
+      longPressTimer = setTimeout(() => { openEditFoodModal(foodId); }, 500);
+    }
+    
+    function toggleFood(foodId) {
+      const food = foods.find(f => f.id === foodId);
+      const existing = selectedFoods.find(f => f.id === foodId);
+      if (existing) {
+        selectedFoods = selectedFoods.filter(f => f.id !== foodId);
+      } else {
+        selectedFoods.push({ ...food, quantity: 1 });
+      }
+      renderFoodGrid();
+    }
+    
+    function adjustQty(foodId, delta) {
+      selectedFoods = selectedFoods.map(f => {
+        if (f.id === foodId) return { ...f, quantity: Math.max(1, f.quantity + delta) };
+        return f;
+      });
+      renderFoodGrid();
+    }
+    
+    function addMealRecord() {
+      if (selectedFoods.length === 0) return;
+      const recordDate = new Date(currentDate);
+      recordDate.setHours(12, 0, 0, 0);
+      const newRecord = {
+        id: Date.now(),
+        mealType: currentMealType,
+        foods: selectedFoods.map(f => ({ ...f })),
+        date: recordDate.toISOString()
+      };
+      mealRecords.push(newRecord);
+      saveData('mealRecords', mealRecords);
+      selectedFoods = [];
+      renderMealSection();
+      showToast('食事を記録しました！🍽️');
+    }
+    
+    function openQuickEntryModal() {
+      document.getElementById('quick-protein').value = '';
+      document.getElementById('quick-fat').value = '';
+      document.getElementById('quick-carbs').value = '';
+      document.getElementById('quick-calories').value = '';
+      document.getElementById('quick-entry-modal').classList.add('active');
+    }
+    
+    function closeQuickEntryModal() {
+      document.getElementById('quick-entry-modal').classList.remove('active');
+    }
+    
+    function updateQuickCalories() {
+      const protein = parseFloat(document.getElementById('quick-protein').value) || 0;
+      const fat = parseFloat(document.getElementById('quick-fat').value) || 0;
+      const carbs = parseFloat(document.getElementById('quick-carbs').value) || 0;
+      const autoCalories = Math.round(protein * 4 + fat * 9 + carbs * 4);
+      document.getElementById('quick-calories').placeholder = autoCalories > 0 ? autoCalories : '自動';
+    }
+    
+    function saveQuickEntry() {
+      const protein = parseFloat(document.getElementById('quick-protein').value) || 0;
+      const fat = parseFloat(document.getElementById('quick-fat').value) || 0;
+      const carbs = parseFloat(document.getElementById('quick-carbs').value) || 0;
+      let calories = parseFloat(document.getElementById('quick-calories').value);
+      if (!calories || isNaN(calories)) {
+        calories = Math.round(protein * 4 + fat * 9 + carbs * 4);
+      }
+      if (protein === 0 && fat === 0 && carbs === 0 && calories === 0) {
+        showToast('値を入力してください');
+        return;
+      }
+      const recordDate = new Date(currentDate);
+      recordDate.setHours(12, 0, 0, 0);
+      const newRecord = {
+        id: Date.now(),
+        mealType: currentMealType,
+        foods: [{ id: 'quick_' + Date.now(), name: 'クイック入力', protein, fat, carbs, calories, unit: '1回', quantity: 1, custom: true }],
+        date: recordDate.toISOString()
+      };
+      mealRecords.push(newRecord);
+      saveData('mealRecords', mealRecords);
+      closeQuickEntryModal();
+      renderMealSection();
+      showToast('記録しました！⚡');
+    }
+    
+    function openAddFoodModal() {
+      document.getElementById('new-food-name').value = '';
+      document.getElementById('new-food-unit').value = '';
+      document.getElementById('new-food-calories').value = '';
+      document.getElementById('new-food-protein').value = '';
+      document.getElementById('new-food-fat').value = '';
+      document.getElementById('new-food-carbs').value = '';
+      document.getElementById('add-food-modal').classList.add('active');
+    }
+    
+    function closeAddFoodModal() {
+      document.getElementById('add-food-modal').classList.remove('active');
+    }
+    
+    function addCustomFood() {
+      const name = document.getElementById('new-food-name').value.trim();
+      const unit = document.getElementById('new-food-unit').value.trim() || '1個';
+      const calories = parseFloat(document.getElementById('new-food-calories').value) || 0;
+      const protein = parseFloat(document.getElementById('new-food-protein').value) || 0;
+      const fat = parseFloat(document.getElementById('new-food-fat').value) || 0;
+      const carbs = parseFloat(document.getElementById('new-food-carbs').value) || 0;
+      if (!name) { showToast('食材名を入力してください'); return; }
+      const id = 'custom_' + Date.now();
+      foods.push({ id, name, unit, calories, protein, fat, carbs, custom: true });
+      saveData('customFoods', foods);
+      closeAddFoodModal();
+      renderFoodGrid();
+      showToast('食材を追加しました！');
+    }
+    
+    function openEditFoodModal(foodId) {
+      const food = foods.find(f => f.id === foodId);
+      if (!food || !food.custom) return;
+      editingFood = food;
+      document.getElementById('edit-food-name').value = food.name;
+      document.getElementById('edit-food-unit').value = food.unit;
+      document.getElementById('edit-food-calories').value = food.calories;
+      document.getElementById('edit-food-protein').value = food.protein;
+      document.getElementById('edit-food-fat').value = food.fat;
+      document.getElementById('edit-food-carbs').value = food.carbs;
+      const modal = document.getElementById('edit-food-modal');
+      modal.style.display = '';
+      modal.classList.add('active');
+    }
+    
+    function closeEditFoodModal() {
+      const modal = document.getElementById('edit-food-modal');
+      modal.classList.remove('active');
+      modal.style.display = '';
+      editingFood = null;
+    }
+    
+    function saveEditFood() {
+      if (!editingFood) return;
+      const name = document.getElementById('edit-food-name').value.trim();
+      if (!name) { showToast('食材名を入力してください'); return; }
+      const idx = foods.findIndex(f => f.id === editingFood.id);
+      if (idx !== -1) {
+        foods[idx] = {
+          ...foods[idx],
+          name,
+          unit: document.getElementById('edit-food-unit').value.trim() || '1個',
+          calories: parseFloat(document.getElementById('edit-food-calories').value) || 0,
+          protein: parseFloat(document.getElementById('edit-food-protein').value) || 0,
+          fat: parseFloat(document.getElementById('edit-food-fat').value) || 0,
+          carbs: parseFloat(document.getElementById('edit-food-carbs').value) || 0
+        };
+        saveData('customFoods', foods);
+      }
+      closeEditFoodModal();
+      renderFoodGrid();
+      showToast('保存しました！');
+    }
+    
+    function confirmDeleteFood() {
+      if (!editingFood) return;
+      const foodId = editingFood.id;
+      foods = foods.filter(f => f.id !== foodId);
+      saveData('customFoods', foods);
+      closeEditFoodModal();
+      renderFoodGrid();
+      showToast('削除しました');
+    }
+    
+    function calculateBMR() {
+      const weight = parseFloat(document.getElementById('calcWeight').value);
+      const height = parseFloat(document.getElementById('calcHeight').value);
+      const age = parseInt(document.getElementById('calcAge').value);
+      const gender = document.getElementById('calcGender').value;
+      return gender === 'male' ? Math.round(10 * weight + 6.25 * height - 5 * age + 5) : Math.round(10 * weight + 6.25 * height - 5 * age - 161);
+    }
+    
+    function calculateTDEE() {
+      return Math.round(calculateBMR() * parseFloat(document.getElementById('calcActivity').value));
+    }
+    
+    function updateCalc() {
+      const bmr = calculateBMR();
+      const tdee = calculateTDEE();
+      document.getElementById('bmr-result').textContent = `${bmr} kcal`;
+      document.getElementById('tdee-result').textContent = `${tdee} kcal`;
+      const currentWeight = parseFloat(document.getElementById('calcWeight').value);
+      const targetWeight = parseFloat(document.getElementById('targetWeight').value);
+      const targetWeeks = parseInt(document.getElementById('targetWeeks').value);
+      const weightDiff = currentWeight - targetWeight;
+      const dailyDeficit = (weightDiff * 7700) / (targetWeeks * 7);
+      const targetCal = Math.round(tdee - dailyDeficit);
+      const protein = Math.round(currentWeight * 2);
+      const fat = Math.round(targetCal * 0.25 / 9);
+      const carbs = Math.round((targetCal - protein * 4 - fat * 9) / 4);
+      document.getElementById('pfc-grid').innerHTML = `
+        <div class="pfc-item"><span class="pfc-value">${targetCal}</span><span class="pfc-label">kcal/日</span></div>
+        <div class="pfc-item"><span class="pfc-value" style="color: #FF6B6B;">${protein}g</span><span class="pfc-label">タンパク質</span></div>
+        <div class="pfc-item"><span class="pfc-value" style="color: #FFEAA7;">${fat}g</span><span class="pfc-label">脂質</span></div>
+        <div class="pfc-item"><span class="pfc-value" style="color: #4ECDC4;">${carbs}g</span><span class="pfc-label">炭水化物</span></div>
+      `;
+      const action = currentWeight > targetWeight ? '減量' : '増量';
+      document.getElementById('pfc-note').textContent = `※ ${currentWeight}kg → ${targetWeight}kg (${action}: ${Math.abs(weightDiff).toFixed(1)}kg / ${targetWeeks}週間)`;
+      calcSettings = {
+        weight: currentWeight,
+        height: parseFloat(document.getElementById('calcHeight').value),
+        age: parseInt(document.getElementById('calcAge').value),
+        gender: document.getElementById('calcGender').value,
+        activity: parseFloat(document.getElementById('calcActivity').value),
+        targetWeight,
+        targetWeeks
+      };
+      saveData('calcSettings', calcSettings);
+    }
+    
+    // RM換算計算機
+    let currentRmType = 'bench'; // 'bench' or 'squat'
+    
+    function switchRmType(type) {
+      currentRmType = type;
+      document.getElementById('rm-tab-bench').classList.toggle('active', type === 'bench');
+      document.getElementById('rm-tab-squat').classList.toggle('active', type === 'squat');
+      
+      if (type === 'bench') {
+        document.getElementById('rm-formula').textContent = '計算式: 1RM = 重量 × 回数 ÷ 40 + 重量';
+      } else {
+        document.getElementById('rm-formula').textContent = '計算式: 1RM = 重量 × 回数 ÷ 33.3 + 重量';
+      }
+      
+      calculateRM();
+    }
+    
+    function calculateRM() {
+      const weight = parseFloat(document.getElementById('rm-weight').value);
+      const reps = parseInt(document.getElementById('rm-reps').value);
+      const resultEl = document.getElementById('rm-result-value');
+      
+      if (!weight || !reps || weight <= 0 || reps <= 0) {
+        resultEl.textContent = '---';
+        return;
+      }
+      
+      let oneRM;
+      if (currentRmType === 'bench') {
+        // ベンチプレス: 1RM = 重量 × 回数 ÷ 40 + 重量
+        oneRM = weight * reps / 40 + weight;
+      } else {
+        // スクワット/デッドリフト: 1RM = 重量 × 回数 ÷ 33.3 + 重量
+        oneRM = weight * reps / 33.3 + weight;
+      }
+      
+      resultEl.textContent = Math.round(oneRM);
+    }
+    
+    function calculateRMValue(weight, reps, type) {
+      if (type === 'bench') {
+        return Math.round(weight * reps / 40 + weight);
+      } else {
+        return Math.round(weight * reps / 33.3 + weight);
+      }
+    }
+    
+    function openRmTableModal() {
+      const typeLabel = currentRmType === 'bench' ? 'ベンチプレス' : 'スクワット/デッドリフト';
+      document.getElementById('rm-table-type').textContent = typeLabel;
+      
+      // RM換算表を生成
+      const weights = [];
+      for (let w = 40; w <= 200; w += 5) {
+        weights.push(w);
+      }
+      const reps = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+      
+      let tableHtml = '<table class="rm-table"><thead><tr><th>重量/回数</th>';
+      reps.forEach(r => {
+        tableHtml += `<th>${r}</th>`;
+      });
+      tableHtml += '</tr></thead><tbody>';
+      
+      weights.forEach(w => {
+        tableHtml += `<tr><td>${w}</td>`;
+        reps.forEach(r => {
+          const rm = calculateRMValue(w, r, currentRmType);
+          tableHtml += `<td>${rm}</td>`;
+        });
+        tableHtml += '</tr>';
+      });
+      
+      tableHtml += '</tbody></table>';
+      
+      document.getElementById('rm-table-container').innerHTML = tableHtml;
+      document.getElementById('rm-table-modal').classList.add('active');
+    }
+    
+    function closeRmTableModal() {
+      document.getElementById('rm-table-modal').classList.remove('active');
+    }
+    
+    function init() {
+      loadData();
+      currentDate = new Date();
+      currentDate.setHours(12, 0, 0, 0);
+      currentWeekStart = getWeekStartDate(currentDate);
+      updateDateDisplay();
+      renderAll();
+      updateCalc();
+    }
+    
+    ['record-modal', 'goal-modal', 'add-exercise-modal', 'edit-exercise-modal', 'add-food-modal', 'edit-food-modal', 'calendar-modal', 'quick-entry-modal', 'rm-table-modal'].forEach(id => {
+      document.getElementById(id).addEventListener('click', (e) => {
+        if (e.target.id === id) {
+          document.getElementById(id).classList.remove('active');
+        }
+      });
+    });
+    
+    init();
+    
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(err => console.log('SW failed'));
+      });
+    }
+  </script>
+</body>
+</html>
